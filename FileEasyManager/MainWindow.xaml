@@ -1,12 +1,499 @@
-﻿<Window x:Class="FileEasyManager.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FileEasyManager"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+﻿<Window x:Class="FileEasyManager.MainWindow" x:Name="MainWindowRoot"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:dd="urn:gong-wpf-dragdrop"
+ Title="FileEasyManager - Example UI" Width="1250" Height="800" MinWidth="900" MinHeight="500"
+ Background="White" WindowStartupLocation="CenterScreen">
+ <!-- ============================== Main Window Layout ============================== -->
+ <Window.Resources>
+  <!-- Gong DragAdornerTemplate: plain file icon and name, no custom theme. -->
+  <DataTemplate x:Key="DragPreviewTemplate">
+   <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1" Padding="6">
+    <StackPanel Orientation="Horizontal">
+     <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="{Binding Icon}" Margin="0,0,6,0"/>
+     <TextBlock Text="{Binding Name}"/>
+    </StackPanel>
+   </Border>
+  </DataTemplate>
+  <!-- Reference: Microsoft Learn WPF ContextMenu, adapted with project-specific labels. -->
+  <ContextMenu x:Key="FileMenu" x:Shared="False" MenuItem.Click="Menu_Click" Opened="PinMenu_Opened">
+<MenuItem Header="Pin to Quick Access" Tag="Pin"/>
+<MenuItem Header="Open" Tag="Open">
+<MenuItem.Icon>
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8E5;"/>
+</MenuItem.Icon>
+</MenuItem>
+<MenuItem Header="Ask Copilot"/>
+<MenuItem Header="Send to another device"/>
+<MenuItem Header="Upload to Quark Drive"/>
+<MenuItem Header="Move to OneDrive - Work or school"/>
+<MenuItem Header="Move to OneDrive - Personal"/>
+<MenuItem Header="Edit with Notepad++"/>
+<MenuItem Header="Open with">
+<MenuItem Header="Notepad"/>
+<MenuItem Header="Notepad++"/>
+<MenuItem Header="Choose another app..."/>
+</MenuItem>
+<MenuItem Header="Huorong Security">
+<MenuItem Header="Scan for viruses"/>
+<MenuItem Header="Check file security"/>
+</MenuItem>
+<MenuItem Header="Edit in Notepad"/>
+<MenuItem Header="Send using ASUS GlideX"/>
+<MenuItem Header="Upload to 123 Cloud Drive"/>
+<MenuItem Header="Add to favourites"/>
+<Separator/>
+<MenuItem Header="7-Zip">
+<MenuItem Header="Add to archive..."/>
+<MenuItem Header="Compress to ZIP"/>
+<MenuItem Header="Extract files..."/>
+<MenuItem Header="Extract here"/>
+</MenuItem>
+<Separator/>
+<MenuItem Header="Give access to">
+<MenuItem Header="Specific people..."/>
+<MenuItem Header="Remove access"/>
+</MenuItem>
+<MenuItem Header="Copy as path"/>
+<MenuItem Header="Share"/>
+<MenuItem Header="Send via QQ">
+<MenuItem Header="Send to a contact"/>
+<MenuItem Header="Send to my devices"/>
+</MenuItem>
+<Separator/>
+<MenuItem Header="Send to">
+<MenuItem Header="Desktop (create shortcut)"/>
+<MenuItem Header="Compressed (zipped) folder"/>
+<MenuItem Header="Documents"/>
+<MenuItem Header="Mail recipient"/>
+</MenuItem>
+<MenuItem Header="Delete file (Tencent PC Manager)"/>
+<MenuItem Header="Unlock file (Tencent PC Manager)"/>
+<MenuItem Header="Shred file (Tencent PC Manager)"/>
+<Separator/>
+<MenuItem Header="Cut" Tag="Cut">
+<MenuItem.Icon>
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8C6;"/>
+</MenuItem.Icon>
+</MenuItem>
+<MenuItem Header="Copy" Tag="Copy">
+<MenuItem.Icon>
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8C8;"/>
+</MenuItem.Icon>
+</MenuItem>
+<MenuItem Header="Move to..." Tag="Move">
+<MenuItem.Icon>
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8DE;"/>
+</MenuItem.Icon>
+</MenuItem>
+<Separator/>
+<MenuItem Header="Create shortcut"/>
+<MenuItem Header="Delete" Tag="Delete">
+<MenuItem.Icon>
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE74D;"/>
+</MenuItem.Icon>
+</MenuItem>
+<MenuItem Header="Rename" Tag="Rename">
+<MenuItem.Icon>
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8AC;"/>
+</MenuItem.Icon>
+</MenuItem>
+<Separator/>
+<MenuItem Header="Properties"/>
+</ContextMenu>
+  <ContextMenu x:Key="LocationMenu" x:Shared="False" MenuItem.Click="LocationMenu_Click" Opened="PinMenu_Opened">
+<MenuItem Header="Pin to Quick Access" Tag="Pin"/>
+<MenuItem Header="Open"/>
+</ContextMenu>
+  <ContextMenu x:Key="BackgroundMenu" x:Shared="False" MenuItem.Click="Menu_Click">
+<MenuItem Header="Refresh"/>
+<Separator/>
+<MenuItem Header="Paste"/>
+<Separator/>
+<MenuItem Header="New folder"/>
+<MenuItem Header="New file"/>
+</ContextMenu>
+  <!-- ================= Pinned Locations - Shared Default Controls ================= -->
+  <ContextMenu x:Key="PinnedMenu" x:Shared="False" MenuItem.Click="Unpin_Click">
+   <MenuItem Header="Unpin from Quick Access"/>
+  </ContextMenu>
+  <DataTemplate x:Key="PinnedTemplate">
+   <Button Tag="{Binding Path}" Click="Location_Click" ContextMenu="{StaticResource PinnedMenu}"
+           ToolTip="{Binding Path}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4"
+           AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop">
+    <StackPanel Orientation="Horizontal">
+     <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE718;" Margin="0,0,6,0"/>
+     <TextBlock Text="{Binding Name}"/>
+    </StackPanel>
+   </Button>
+  </DataTemplate>
+ </Window.Resources>
+ <DockPanel Margin="8">
+  <!-- ============================== Bottom - Status Bar ============================== -->
+  <StatusBar DockPanel.Dock="Bottom">
+   <StatusBarItem>
+<TextBlock x:Name="ItemCount"/>
+</StatusBarItem>
+   <StatusBarItem>
+<TextBlock Text="Example data only - no real files"/>
+</StatusBarItem>
+  </StatusBar>
+  <!-- ============================== Top - Navigation, Address Bar and Search Placeholder ============================== -->
+  <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+   <Grid.ColumnDefinitions>
+<ColumnDefinition Width="Auto"/>
+<ColumnDefinition Width="*"/>
+<ColumnDefinition Width="320"/>
+</Grid.ColumnDefinitions>
+   <StackPanel Orientation="Horizontal">
+    <Button x:Name="BackButton" Padding="8,3" Margin="0,0,4,0" Click="Back_Click" ToolTip="Back" AutomationProperties.Name="Back">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE72B;"/>
+</Button>
+    <Button x:Name="ForwardButton" Padding="8,3" Margin="0,0,4,0" Click="Forward_Click" ToolTip="Forward" AutomationProperties.Name="Forward">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE72A;"/>
+</Button>
+    <Button x:Name="UpButton" Padding="8,3" Margin="0,0,8,0" Click="Up_Click" ToolTip="Up one folder" AutomationProperties.Name="Up one folder">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE74A;"/>
+</Button>
+    <Button Click="Refresh_Click" Padding="8,3" ToolTip="Refresh" AutomationProperties.Name="Refresh">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE72C;"/>
+</Button>
+   </StackPanel>
+      <!-- ================= Search Box - UI Preview Only ================= -->
+   <DockPanel Grid.Column="2" Margin="8,0,0,0">
+    <Button DockPanel.Dock="Right" x:Name="SearchFiltersButton" Content="Filters" Click="SearchOptions_Click" Padding="6,3" Margin="4,0,0,0"/>
+    <Button DockPanel.Dock="Right" Content="Search" Click="SearchPreview_Click" Padding="6,3"/>
+    <TextBox x:Name="SearchNameBox" VerticalContentAlignment="Center" KeyDown="SearchName_KeyDown"
+             ToolTip="Enter an example file name. Search is a UI preview only."/>
+   </DockPanel>
+<TextBox x:Name="AddressBox" Grid.Column="1" VerticalContentAlignment="Center" KeyDown="Address_KeyDown" ToolTip="Enter a demo folder path and press Enter"/>
+  </Grid>
+  <!-- ================= Search Filters - Default WPF Controls ================= -->
+  <!-- Reference: Microsoft Learn DatePicker and ComboBox controls. -->
+  <Popup x:Name="SearchFilters" PlacementTarget="{Binding ElementName=SearchFiltersButton}" Placement="Bottom" HorizontalOffset="-630" StaysOpen="False">
+   <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1" Padding="8">
+    <ScrollViewer MaxHeight="450" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Width="660">
+     <GroupBox Header="Search options (UI example)">
+   <StackPanel Margin="8">
+    <WrapPanel>
+     <StackPanel Margin="0,0,12,8">
+      <TextBlock Text="Search in"/>
+      <ComboBox x:Name="SearchScope" Width="170" SelectedIndex="0">
+       <ComboBoxItem Content="Current folder"/><ComboBoxItem Content="OS (C:)"/><ComboBoxItem Content="Data (D:)"/>
+       <ComboBoxItem Content="All example drives"/>
+      </ComboBox>
+     </StackPanel>
+     <StackPanel Margin="0,0,12,8">
+      <TextBlock Text="Items"/>
+      <ComboBox x:Name="SearchKind" Width="140" SelectedIndex="0">
+       <ComboBoxItem Content="Files and folders"/><ComboBoxItem Content="Files only"/><ComboBoxItem Content="Folders only"/>
+      </ComboBox>
+     </StackPanel>
+     <StackPanel Margin="0,0,12,8">
+      <TextBlock Text="File type"/>
+      <ComboBox x:Name="SearchType" Width="160" SelectedIndex="0">
+       <ComboBoxItem Content="Any type"/><ComboBoxItem Content="Documents (.docx, .pdf)"/>
+       <ComboBoxItem Content="Text files (.txt)"/><ComboBoxItem Content="Images (.png, .jpg)"/>
+       <ComboBoxItem Content="Audio (.mp3, .wav)"/><ComboBoxItem Content="Video (.mp4, .avi)"/>
+       <ComboBoxItem Content="Archives (.zip, .7z)"/>
+      </ComboBox>
+     </StackPanel>
+     <StackPanel Margin="0,0,12,8">
+      <TextBlock Text="Name matching"/>
+      <ComboBox x:Name="SearchMatch" Width="140" SelectedIndex="0">
+       <ComboBoxItem Content="Contains"/><ComboBoxItem Content="Starts with"/><ComboBoxItem Content="Exact name"/>
+      </ComboBox>
+     </StackPanel>
+     <CheckBox x:Name="SearchSubfolders" Content="Include subfolders" IsChecked="True" VerticalAlignment="Center" Margin="0,0,12,8"/>
+     <CheckBox x:Name="SearchCase" Content="Match case" VerticalAlignment="Center" Margin="0,0,12,8"/>
+    </WrapPanel>
+    <WrapPanel>
+     <StackPanel Margin="0,0,12,8"><TextBlock Text="Modified from"/><DatePicker x:Name="SearchDateFrom" Width="140" DateValidationError="SearchDate_Invalid"/></StackPanel>
+     <StackPanel Margin="0,0,12,8"><TextBlock Text="Modified to"/><DatePicker x:Name="SearchDateTo" Width="140" DateValidationError="SearchDate_Invalid"/></StackPanel>
+     <StackPanel Margin="0,0,6,8"><TextBlock Text="Minimum size"/><TextBox x:Name="SearchMinSize" Width="90" ToolTip="Optional example size"/></StackPanel>
+     <StackPanel Margin="0,0,6,8"><TextBlock Text="Maximum size"/><TextBox x:Name="SearchMaxSize" Width="90" ToolTip="Optional example size"/></StackPanel>
+     <StackPanel Margin="0,0,12,8"><TextBlock Text="Unit"/><ComboBox x:Name="SearchSizeUnit" Width="65" SelectedIndex="0"><ComboBoxItem Content="KB"/><ComboBoxItem Content="MB"/><ComboBoxItem Content="GB"/></ComboBox></StackPanel>
+     <Button Content="Apply filters" Click="SearchPreview_Click" Padding="8,3" VerticalAlignment="Center" Margin="0,0,8,0"/>
+     <Button Content="Reset filters" Click="SearchReset_Click" Padding="8,3" VerticalAlignment="Center"/>
+    </WrapPanel>
+    <TextBlock Text="Example UI only: Search and Apply filters do not scan drives or change the file list." TextWrapping="Wrap"/>
+   </StackPanel>
+     </GroupBox>
+    </ScrollViewer>
+   </Border>
+  </Popup>
+  <!-- ============================== File Action Toolbar - Visible in Folder View ============================== -->
+  <WrapPanel x:Name="FileToolbar" DockPanel.Dock="Top" Margin="0,0,0,8">
+<Button Content="Pin this folder" Click="PinCurrent_Click" Padding="8,3" Margin="0,0,4,0"/>
+   <Button Tag="New folder" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8F4;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="New folder" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button Tag="New file" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8A5;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="New file" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="OpenButton" Tag="Open" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8E5;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Open" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="CopyButton" Tag="Copy" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8C8;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Copy" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="CutButton" Tag="Cut" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8C6;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Cut" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="PasteButton" Tag="Paste" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE77F;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Paste" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="MoveButton" Tag="Move" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8DE;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Move to..." VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="RenameButton" Tag="Rename" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8AC;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Rename" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+   <Button x:Name="DeleteButton" Tag="Delete" Click="Action_Click" Padding="8,3">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE74D;" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="Delete" VerticalAlignment="Center"/>
+</StackPanel>
+</Button>
+  </WrapPanel>
+  <!-- ============================== Bottom - Operation Feedback ============================== -->
+  <TextBlock DockPanel.Dock="Bottom" x:Name="Feedback" Text="Ready." Margin="0,8,0,8" TextWrapping="Wrap"/>
+  <Grid>
+   <Grid.ColumnDefinitions>
+<ColumnDefinition Width="160"/>
+<ColumnDefinition Width="*"/>
+</Grid.ColumnDefinitions>
+   <!-- ============================== Left - Sidebar Default Folder Shortcuts ============================== -->
+   <StackPanel x:Name="Sidebar" Margin="0,0,8,0">
+<Button Tag="Home" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE80F;" Margin="0,0,8,0"/>
+<TextBlock Text="Home"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Desktop" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Desktop"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Downloads" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Downloads"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Documents" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Documents"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Pictures" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Pictures"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Music" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Music"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Videos" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Videos"/>
+</StackPanel>
+</Button>
+    <!-- ================= Sidebar - Pinned Locations ================= -->
+    <TextBlock Text="Pinned Locations" Margin="0,8,0,4"/>
+    <ItemsControl ItemsSource="{Binding PinnedLocations, ElementName=MainWindowRoot}" ItemTemplate="{StaticResource PinnedTemplate}"/>
+    <Separator Margin="0,4,0,8"/><Separator Margin="0,12,0,12"/>
+<Button Tag="This PC" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE7F4;" Margin="0,0,8,0"/>
+<TextBlock Text="This PC"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xEDA2;" Margin="0,0,8,0"/>
+<TextBlock Text="OS (C:)"/>
+</StackPanel>
+</Button>
+<Button Tag="D:\" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xEDA2;" Margin="0,0,8,0"/>
+<TextBlock Text="Data (D:)"/>
+</StackPanel>
+</Button>
+</StackPanel>
+   <!-- ============================== Right - Home Page and Folder View ============================== -->
+   <Grid Grid.Column="1">
+<ScrollViewer ContextMenu="{StaticResource BackgroundMenu}" x:Name="HomeView" VerticalScrollBarVisibility="Auto">
+<StackPanel x:Name="HomePanel" Margin="12">
+<!-- ================= Quick Access ================= -->
+<TextBlock Text="Quick Access"/>
+<Separator/>
+<WrapPanel Margin="0,8,0,24">
+<Button Tag="C:\Desktop" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" Width="140" Height="48">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Desktop"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Downloads" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" Width="140" Height="48">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Downloads"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Documents" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" Width="140" Height="48">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Documents"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Pictures" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" Width="140" Height="48">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Pictures"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Music" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" Width="140" Height="48">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Music"/>
+</StackPanel>
+</Button>
+<Button Tag="C:\Videos" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" Width="140" Height="48">
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8B7;" Margin="0,0,8,0"/>
+<TextBlock Text="Videos"/>
+</StackPanel>
+</Button>
+</WrapPanel>
+<!-- ================= Home - Pinned Locations ================= -->
+<TextBlock Text="Pinned Locations"/>
+<ItemsControl ItemsSource="{Binding PinnedLocations, ElementName=MainWindowRoot}" ItemTemplate="{StaticResource PinnedTemplate}" Margin="0,8,0,16">
+ <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+</ItemsControl><!-- ================= Devices and Drives ================= -->
+<TextBlock Text="Devices and drives"/>
+<Separator/>
+<UniformGrid Columns="2" Margin="0,8,0,24">
+<StackPanel Margin="0,0,24,0">
+<Button Tag="C:\" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xEDA2;" Margin="0,0,8,0"/>
+<TextBlock Text="OS (C:)"/>
+</StackPanel>
+</Button>
+<ProgressBar Value="40" Height="14" Margin="4,8,4,4"/>
+<TextBlock Text="Example: 400 GB used / 1000 GB total"/>
+</StackPanel>
+<StackPanel Margin="0,0,24,0">
+<Button Tag="D:\" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xEDA2;" Margin="0,0,8,0"/>
+<TextBlock Text="Data (D:)"/>
+</StackPanel>
+</Button>
+<ProgressBar Value="40" Height="14" Margin="4,8,4,4"/>
+<TextBlock Text="Example: 300 GB used / 750 GB total"/>
+</StackPanel>
+</UniformGrid>
+<!-- ================= Recent Items ================= -->
+<Grid>
+<Grid.ColumnDefinitions>
+<ColumnDefinition/>
+<ColumnDefinition/>
+</Grid.ColumnDefinitions>
+<StackPanel Grid.Column="0" Margin="4">
+<TextBlock Text="Recent Folders"/>
+<Separator/>
+<ListView x:Name="RecentFolders" Height="220" Margin="0,8,0,0" MouseDoubleClick="Recent_DoubleClick" ContextMenu="{StaticResource FileMenu}" PreviewMouseRightButtonDown="List_RightClick" dd:DragDrop.IsDragSource="True" dd:DragDrop.UseDefaultDragAdorner="True" dd:DragDrop.DragAdornerTemplate="{StaticResource DragPreviewTemplate}" dd:DragDrop.DragHandler="{Binding QuickMoveDragHandler, ElementName=MainWindowRoot}">
+<ListView.View>
+<GridView>
+<GridViewColumn Header="Name" Width="145" DisplayMemberBinding="{Binding Name}"/>
+<GridViewColumn Header="Path" Width="125" DisplayMemberBinding="{Binding Path}"/>
+<GridViewColumn Header="Date modified" Width="145" DisplayMemberBinding="{Binding Modified}"/>
+</GridView>
+</ListView.View>
+</ListView>
+</StackPanel>
+<StackPanel Grid.Column="1" Margin="4">
+<TextBlock Text="Recent Files / Programs"/>
+<Separator/>
+<ListView x:Name="RecentFiles" Height="220" Margin="0,8,0,0" MouseDoubleClick="Recent_DoubleClick" ContextMenu="{StaticResource FileMenu}" PreviewMouseRightButtonDown="List_RightClick" dd:DragDrop.IsDragSource="True" dd:DragDrop.UseDefaultDragAdorner="True" dd:DragDrop.DragAdornerTemplate="{StaticResource DragPreviewTemplate}" dd:DragDrop.DragHandler="{Binding QuickMoveDragHandler, ElementName=MainWindowRoot}">
+<ListView.View>
+<GridView>
+<GridViewColumn Header="Name" Width="145" DisplayMemberBinding="{Binding Name}"/>
+<GridViewColumn Header="Path" Width="125" DisplayMemberBinding="{Binding Path}"/>
+<GridViewColumn Header="Date modified" Width="145" DisplayMemberBinding="{Binding Modified}"/>
+</GridView>
+</ListView.View>
+</ListView>
+</StackPanel>
+</Grid>
+</StackPanel>
+</ScrollViewer>
+<DockPanel x:Name="FolderView">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+<TextBlock x:Name="FolderTitle"/>
+<TextBlock x:Name="SortLabel" HorizontalAlignment="Right"/>
+</DockPanel>
     <Grid>
-
+     <!-- ============================== Folder View - File List, Multiple Selection and Sorting ============================== -->
+     <ListView x:Name="FileList" SelectionMode="Extended" SelectionChanged="Selection_Changed" MouseDoubleClick="Files_DoubleClick" KeyDown="Files_KeyDown" GridViewColumnHeader.Click="Sort_Click" ContextMenu="{StaticResource FileMenu}" PreviewMouseRightButtonDown="List_RightClick" dd:DragDrop.IsDragSource="True" dd:DragDrop.UseDefaultDragAdorner="True" dd:DragDrop.DragAdornerTemplate="{StaticResource DragPreviewTemplate}" dd:DragDrop.DragHandler="{Binding QuickMoveDragHandler, ElementName=MainWindowRoot}">
+      <ListView.View>
+<GridView AllowsColumnReorder="False">
+       <GridViewColumn Header="Name" Width="290">
+<GridViewColumn.CellTemplate>
+<DataTemplate>
+<StackPanel Orientation="Horizontal">
+<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="{Binding Icon}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+<TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+</StackPanel>
+</DataTemplate>
+</GridViewColumn.CellTemplate>
+</GridViewColumn>
+       <GridViewColumn Header="Type" Width="145" DisplayMemberBinding="{Binding Type}"/>
+       <GridViewColumn Header="Date modified" Width="165" DisplayMemberBinding="{Binding Modified}"/>
+       <GridViewColumn Header="Size" Width="100" DisplayMemberBinding="{Binding SizeText}"/>
+      </GridView>
+</ListView.View>
+     </ListView>
+     <!-- ============================== Folder View - Empty Folder Message ============================== -->
+     <TextBlock x:Name="EmptyLabel" Text="This folder is empty." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed"/>
     </Grid>
+   </DockPanel>
+</Grid>
+  </Grid>
+ </DockPanel>
 </Window>
