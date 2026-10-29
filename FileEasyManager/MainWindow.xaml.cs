@@ -15,7 +15,7 @@ public partial class MainWindow : Window
     private string sortProperty = "Name";
     private ListSortDirection sortDirection = ListSortDirection.Ascending;
 
-    // -------------------- Sample Data Only --------------------
+    // -------------------- Example data --------------------
     private readonly List<PreviewItem> samples =
     [
         new("C:", "This PC", true), new("D:", "This PC", true),
@@ -26,11 +26,11 @@ public partial class MainWindow : Window
         new("ExampleFolder2", "C:\\Documents", true),
         new("ExampleFolder3", "C:\\Documents\\ExampleFolder1", true),
         new("ExampleFolder4", "C:\\Documents\\ExampleFolder1", true),
-        new("ExampleFile1.docx", "C:\\Documents\\ExampleFolder1", false, 102400),
-        new("ExampleFile2.docx", "C:\\Documents", false, 204800),
-        new("ExampleFile3.pdf", "C:\\Documents", false, 307200),
-        new("ExampleFile4.txt", "C:\\Documents", false, 409600),
-        new("ExampleFile5.png", "C:\\Documents", false, 512000),
+        new("ExampleFile1.docx", "C:\\Documents\\ExampleFolder1", false, 102400, new DateTime(2026, 10, 20)),
+        new("ExampleFile2.docx", "C:\\Documents", false, 204800, new DateTime(2026, 10, 27)),
+        new("ExampleFile3.pdf", "C:\\Documents", false, 307200, new DateTime(2026, 10, 22)),
+        new("ExampleFile4.txt", "C:\\Documents", false, 409600, new DateTime(2026, 10, 25)),
+        new("ExampleFile5.png", "C:\\Documents", false, 512000, new DateTime(2026, 10, 24)),
         new("ExampleFolder5", "D:\\", true), new("ExampleFolder6", "D:\\", true)
     ];
 
@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        detailsView = FileList.View as GridView;
         RecentFolders.ItemsSource = samples.Where(x => x.Folder && x.Parent != "This PC").Skip(6).Take(5).ToList();
         RecentFiles.ItemsSource = samples.Where(x => !x.Folder).Take(5).ToList();
         PinnedLocations.Add(samples.First(x => x.Name == "ExampleFolder1"));
@@ -56,7 +57,9 @@ public partial class MainWindow : Window
     {
         bool home = currentPath == "Home";
         HomeView.Visibility = home ? Visibility.Visible : Visibility.Collapsed;
-        FolderView.Visibility = FileToolbar.Visibility = home ? Visibility.Collapsed : Visibility.Visible;
+        FolderView.Visibility = home ? Visibility.Collapsed : Visibility.Visible;
+        FileToolbar.Visibility = Visibility.Visible;
+        SortButton.IsEnabled = ViewButton.IsEnabled = !home;
         AddressBox.Text = currentPath;
         FolderTitle.Text = currentPath;
         FileList.ItemsSource = samples.Where(x => x.Parent == currentPath).ToList();
@@ -132,7 +135,7 @@ public partial class MainWindow : Window
     private void Sort_Click(object sender, RoutedEventArgs e)
     {
         if (e.OriginalSource is not GridViewColumnHeader header || header.Column == null) return;
-        string property = header.Column.Header.ToString() switch { "Type" => "Type", "Date modified" => "Modified", "Size" => "Bytes", _ => "Name" };
+        string property = header.Column.Header.ToString() switch { "Type" => "Type", "Date modified" => "ModifiedDate", "Size" => "Bytes", _ => "Name" };
         sortDirection = property == sortProperty && sortDirection == ListSortDirection.Ascending ? ListSortDirection.Descending : ListSortDirection.Ascending;
         sortProperty = property; ApplySort();
     }
@@ -140,12 +143,15 @@ public partial class MainWindow : Window
     {
         var view = CollectionViewSource.GetDefaultView(FileList.ItemsSource);
         view.SortDescriptions.Clear();
+        view.SortDescriptions.Add(new SortDescription("Folder", ListSortDirection.Descending));
         view.SortDescriptions.Add(new SortDescription(sortProperty, sortDirection));
-        SortLabel.Text = $"Sort: {sortProperty} {(sortDirection == ListSortDirection.Ascending ? "↑" : "↓")}";
+        string label = sortProperty switch { "ModifiedDate" => "Date modified", "Bytes" => "Size", _ => sortProperty };
+        SortLabel.Text = $"{label} {(sortDirection == ListSortDirection.Ascending ? "↑" : "↓")}";
+        UpdateSortChecks();
     }
 
     // -------------------- UI Action Previews - No File Operations --------------------
-    private void Preview(string action) => MessageBox.Show(this, action + " - UI preview only.", "FileEasyManager");
+    private void Preview(string action) => MessageBox.Show(this, action + " is not implemented in this example.", "FileEasyManager");
     private void Action_Click(object sender, RoutedEventArgs e)
     {
         string action = (string)((Button)sender).Tag;
@@ -156,8 +162,9 @@ public partial class MainWindow : Window
     {
         if (e.OriginalSource is not MenuItem item || item.HasItems) return;
         string action = item.Tag as string ?? item.Header.ToString()!;
-        var list = ((ContextMenu)sender).PlacementTarget as ListView;
+        var list = ((ContextMenu)sender).PlacementTarget as ListView ?? FileList;
         if (action == "Pin") PinFolders(list?.SelectedItems.Cast<PreviewItem>() ?? []);
+        else if (action == "ClosePrograms") ShowCloseProgramsPreview(list?.SelectedItem as PreviewItem);
         else if (action == "Open") OpenItem(list?.SelectedItem as PreviewItem);
         else if (action == "Refresh") ShowPage();
         else Preview(action);
@@ -166,6 +173,7 @@ public partial class MainWindow : Window
     {
         if (((ContextMenu)sender).PlacementTarget is not Button button) return;
         if (e.OriginalSource is MenuItem { Tag: "Pin" }) PinFolders(samples.Where(x => x.Path == (string)button.Tag));
+        else if (e.OriginalSource is MenuItem { Tag: "ClosePrograms" }) ShowCloseProgramsPreview(samples.FirstOrDefault(x => x.Path == (string)button.Tag));
         else Navigate((string)button.Tag);
     }
     private void Files_KeyDown(object sender, KeyEventArgs e)
@@ -175,11 +183,12 @@ public partial class MainWindow : Window
 }
 
 // -------------------- Simple Display Model --------------------
-public record PreviewItem(string Name, string Parent, bool Folder, long Bytes = 0)
+public record PreviewItem(string Name, string Parent, bool Folder, long Bytes = 0, DateTime? ModifiedAt = null)
 {
     public string Path => Parent == "This PC" ? Name + "\\" : Parent.TrimEnd('\\') + "\\" + Name;
     public string Icon => Folder ? "\uE8B7" : "\uE8A5";
     public string Type => Folder ? "File folder" : System.IO.Path.GetExtension(Name) + " file";
-    public string Modified => "27 Oct 2026 10:30";
+    public DateTime ModifiedDate => ModifiedAt ?? new DateTime(2026, 10, 27, 10, 30, 0);
+    public string Modified => ModifiedDate.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture);
     public string SizeText => Folder ? "—" : $"{Bytes / 1024d:0} KB";
 }

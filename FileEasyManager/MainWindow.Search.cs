@@ -6,14 +6,13 @@ namespace FileEasyManager;
 
 public partial class MainWindow
 {
-    // -------------------- Search UI Preview - No Filtering Logic --------------------
-    // Standard WPF controls, not a copied search implementation.
+    // -------------------- Search controls --------------------
     // https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/datepicker
     private void SearchOptions_Click(object sender, RoutedEventArgs e) => SearchFilters.IsOpen = !SearchFilters.IsOpen;
     private void SearchPreview_Click(object sender, RoutedEventArgs e)
     {
         SearchFilters.IsOpen = false;
-        Feedback.Text = "Search UI preview only. The example file list is unchanged.";
+        Feedback.Text = "Search is not implemented in this example.";
     }
     private void SearchName_KeyDown(object sender, KeyEventArgs e)
     {
@@ -22,7 +21,7 @@ public partial class MainWindow
         e.Handled = true;
     }
 
-    // -------------------- Reset Search Controls Only --------------------
+    // -------------------- Reset filters --------------------
     private void SearchReset_Click(object sender, RoutedEventArgs e)
     {
         SearchNameBox.Clear();
@@ -33,7 +32,7 @@ public partial class MainWindow
         SearchDateFrom.Text = SearchDateTo.Text = "";
         SearchMinSize.Clear();
         SearchMaxSize.Clear();
-        Feedback.Text = "Search controls reset. The example file list is unchanged.";
+        Feedback.Text = "Search options reset.";
     }
     private void SearchDate_Invalid(object? sender, DatePickerDateValidationErrorEventArgs e)
     {

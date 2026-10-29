@@ -9,7 +9,7 @@ namespace FileEasyManager;
 
 public partial class MainWindow
 {
-    // -------------------- Quick Move - Drag State --------------------
+    // -------------------- Quick Move state --------------------
     // WPF drag/drop pattern adapted from Microsoft Learn:
     // https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/drag-and-drop-overview
     private const string QuickMoveFormat = "FileEasyManager.PreviewItems";
@@ -21,8 +21,7 @@ public partial class MainWindow
     private string? droppedPath;
     private record MoveTarget(string Path, int Level);
 
-    // -------------------- Open Source Drag Source and Visual Preview --------------------
-    // Uses Gong.WPF.DragDrop 4.0.0 (BSD-3-Clause), rather than copied library source.
+    // -------------------- Gong drag handler --------------------
     // https://github.com/punker76/gong-wpf-dragdrop
     // https://github.com/punker76/gong-wpf-dragdrop/wiki/Usage
     private QuickMoveSource? quickMoveSource;
@@ -37,7 +36,7 @@ public partial class MainWindow
             info.DataFormat = DataFormats.GetDataFormat(QuickMoveFormat);
             info.Effects = items.Length > 0 ? DragDropEffects.Move : DragDropEffects.None;
             window.droppedPath = null;
-            window.Feedback.Text = "Drag preview active. Hover over a sidebar folder to expand it. Esc cancels.";
+            window.Feedback.Text = "Drag to a folder. Hold to expand; Esc to cancel.";
         }
         public override void DragDropOperationFinished(DragDropEffects result, IDragInfo info)
         {
@@ -46,8 +45,8 @@ public partial class MainWindow
             window.CloseMovePanels(0);
             window.hoverPath = null;
             string? destination = window.droppedPath;
-            window.Feedback.Text = destination == null ? "Quick Move cancelled. No files changed." : "Quick Move preview: " + destination + ". No files changed.";
-            // Use the status line so the library can finish removing its drag preview.
+            window.Feedback.Text = destination == null ? "Drag cancelled." : "Example destination: " + destination;
+
         }
     }
     // -------------------- Sidebar Drag Targets --------------------
@@ -66,7 +65,7 @@ public partial class MainWindow
              !path.StartsWith(item.Path.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase))));
     }
 
-    // -------------------- Hover to Expand the Next Folder Level --------------------
+    // -------------------- Folder hover --------------------
     private void HoverMoveTarget(FrameworkElement anchor, MoveTarget target, DragEventArgs e)
     {
         e.Handled = true;

@@ -6,7 +6,7 @@
  Background="White" WindowStartupLocation="CenterScreen">
  <!-- ============================== Main Window Layout ============================== -->
  <Window.Resources>
-  <!-- Gong DragAdornerTemplate: plain file icon and name, no custom theme. -->
+  <!-- Gong drag preview template. -->
   <DataTemplate x:Key="DragPreviewTemplate">
    <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1" Padding="6">
     <StackPanel Orientation="Horizontal">
@@ -15,9 +15,9 @@
     </StackPanel>
    </Border>
   </DataTemplate>
-  <!-- Reference: Microsoft Learn WPF ContextMenu, adapted with project-specific labels. -->
   <ContextMenu x:Key="FileMenu" x:Shared="False" MenuItem.Click="Menu_Click" Opened="PinMenu_Opened">
 <MenuItem Header="Pin to Quick Access" Tag="Pin"/>
+<MenuItem Header="Close all programs..." Tag="ClosePrograms"/>
 <MenuItem Header="Open" Tag="Open">
 <MenuItem.Icon>
 <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8E5;"/>
@@ -103,6 +103,7 @@
 </ContextMenu>
   <ContextMenu x:Key="LocationMenu" x:Shared="False" MenuItem.Click="LocationMenu_Click" Opened="PinMenu_Opened">
 <MenuItem Header="Pin to Quick Access" Tag="Pin"/>
+<MenuItem Header="Close all programs..." Tag="ClosePrograms"/>
 <MenuItem Header="Open"/>
 </ContextMenu>
   <ContextMenu x:Key="BackgroundMenu" x:Shared="False" MenuItem.Click="Menu_Click">
@@ -113,9 +114,10 @@
 <MenuItem Header="New folder"/>
 <MenuItem Header="New file"/>
 </ContextMenu>
-  <!-- ================= Pinned Locations - Shared Default Controls ================= -->
+  <!-- ================= Pinned folders ================= -->
   <ContextMenu x:Key="PinnedMenu" x:Shared="False" MenuItem.Click="Unpin_Click">
    <MenuItem Header="Unpin from Quick Access"/>
+<MenuItem Header="Close all programs..." Tag="ClosePrograms"/>
   </ContextMenu>
   <DataTemplate x:Key="PinnedTemplate">
    <Button Tag="{Binding Path}" Click="Location_Click" ContextMenu="{StaticResource PinnedMenu}"
@@ -127,6 +129,39 @@
     </StackPanel>
    </Button>
   </DataTemplate>
+  <!-- ================= Sort and View Menus ================= -->
+  <ContextMenu x:Key="SortOptions" x:Shared="False" MenuItem.Click="SortMenu_Click">
+   <MenuItem Header="Name" Tag="Name" IsCheckable="True"/>
+   <MenuItem Header="Date modified" Tag="ModifiedDate" IsCheckable="True"/>
+   <MenuItem Header="Type" Tag="Type" IsCheckable="True"/>
+   <MenuItem Header="Size" Tag="Bytes" IsCheckable="True"/>
+   <Separator/>
+   <MenuItem Header="Ascending" Tag="Ascending" IsCheckable="True"/>
+   <MenuItem Header="Descending" Tag="Descending" IsCheckable="True"/>
+  </ContextMenu>
+  <ContextMenu x:Key="ViewOptions" x:Shared="False" MenuItem.Click="ViewMenu_Click">
+   <MenuItem Header="Extra large icons" Tag="ExtraLarge" IsCheckable="True"/>
+   <MenuItem Header="Large icons" Tag="Large" IsCheckable="True"/>
+   <MenuItem Header="Medium icons" Tag="Medium" IsCheckable="True"/>
+   <MenuItem Header="Small icons" Tag="Small" IsCheckable="True"/>
+   <Separator/>
+   <MenuItem Header="List" Tag="List" IsCheckable="True"/>
+   <MenuItem Header="Details" Tag="Details" IsCheckable="True" IsChecked="True"/>
+  </ContextMenu>
+  <ItemsPanelTemplate x:Key="RowsPanel"><VirtualizingStackPanel/></ItemsPanelTemplate>
+  <ItemsPanelTemplate x:Key="IconsPanel"><WrapPanel/></ItemsPanelTemplate>
+  <ItemsPanelTemplate x:Key="ListPanel">
+   <WrapPanel Orientation="Vertical" Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=ScrollContentPresenter}}"/>
+  </ItemsPanelTemplate>
+  <DataTemplate x:Key="SmallTemplate">
+   <StackPanel Orientation="Horizontal" Width="190" Height="24" ToolTip="{Binding Path}">
+    <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="{Binding Icon}" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Width="165"/>
+   </StackPanel>
+  </DataTemplate>
+  <DataTemplate x:Key="MediumTemplate"><StackPanel Width="110" Height="78" ToolTip="{Binding Path}" Margin="4"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="{Binding Icon}" FontSize="32" HorizontalAlignment="Center" Margin="0,4,0,8"/><TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="36"/></StackPanel></DataTemplate>
+  <DataTemplate x:Key="LargeTemplate"><StackPanel Width="130" Height="100" ToolTip="{Binding Path}" Margin="4"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="{Binding Icon}" FontSize="48" HorizontalAlignment="Center" Margin="0,4,0,8"/><TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="36"/></StackPanel></DataTemplate>
+  <DataTemplate x:Key="ExtraLargeTemplate"><StackPanel Width="150" Height="140" ToolTip="{Binding Path}" Margin="4"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="{Binding Icon}" FontSize="80" HorizontalAlignment="Center" Margin="0,4,0,8"/><TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="36"/></StackPanel></DataTemplate>
  </Window.Resources>
  <DockPanel Margin="8">
   <!-- ============================== Bottom - Status Bar ============================== -->
@@ -159,21 +194,20 @@
 <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE72C;"/>
 </Button>
    </StackPanel>
-      <!-- ================= Search Box - UI Preview Only ================= -->
+      <!-- ================= Search box ================= -->
    <DockPanel Grid.Column="2" Margin="8,0,0,0">
     <Button DockPanel.Dock="Right" x:Name="SearchFiltersButton" Content="Filters" Click="SearchOptions_Click" Padding="6,3" Margin="4,0,0,0"/>
     <Button DockPanel.Dock="Right" Content="Search" Click="SearchPreview_Click" Padding="6,3"/>
     <TextBox x:Name="SearchNameBox" VerticalContentAlignment="Center" KeyDown="SearchName_KeyDown"
-             ToolTip="Enter an example file name. Search is a UI preview only."/>
+             ToolTip="Search by name"/>
    </DockPanel>
 <TextBox x:Name="AddressBox" Grid.Column="1" VerticalContentAlignment="Center" KeyDown="Address_KeyDown" ToolTip="Enter a demo folder path and press Enter"/>
   </Grid>
-  <!-- ================= Search Filters - Default WPF Controls ================= -->
-  <!-- Reference: Microsoft Learn DatePicker and ComboBox controls. -->
+  <!-- ================= Search filters ================= -->
   <Popup x:Name="SearchFilters" PlacementTarget="{Binding ElementName=SearchFiltersButton}" Placement="Bottom" HorizontalOffset="-630" StaysOpen="False">
    <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1" Padding="8">
     <ScrollViewer MaxHeight="450" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Width="660">
-     <GroupBox Header="Search options (UI example)">
+     <GroupBox Header="Search options">
    <StackPanel Margin="8">
     <WrapPanel>
      <StackPanel Margin="0,0,12,8">
@@ -210,85 +244,60 @@
     <WrapPanel>
      <StackPanel Margin="0,0,12,8"><TextBlock Text="Modified from"/><DatePicker x:Name="SearchDateFrom" Width="140" DateValidationError="SearchDate_Invalid"/></StackPanel>
      <StackPanel Margin="0,0,12,8"><TextBlock Text="Modified to"/><DatePicker x:Name="SearchDateTo" Width="140" DateValidationError="SearchDate_Invalid"/></StackPanel>
-     <StackPanel Margin="0,0,6,8"><TextBlock Text="Minimum size"/><TextBox x:Name="SearchMinSize" Width="90" ToolTip="Optional example size"/></StackPanel>
-     <StackPanel Margin="0,0,6,8"><TextBlock Text="Maximum size"/><TextBox x:Name="SearchMaxSize" Width="90" ToolTip="Optional example size"/></StackPanel>
+     <StackPanel Margin="0,0,6,8"><TextBlock Text="Minimum size"/><TextBox x:Name="SearchMinSize" Width="90" ToolTip="Optional size"/></StackPanel>
+     <StackPanel Margin="0,0,6,8"><TextBlock Text="Maximum size"/><TextBox x:Name="SearchMaxSize" Width="90" ToolTip="Optional size"/></StackPanel>
      <StackPanel Margin="0,0,12,8"><TextBlock Text="Unit"/><ComboBox x:Name="SearchSizeUnit" Width="65" SelectedIndex="0"><ComboBoxItem Content="KB"/><ComboBoxItem Content="MB"/><ComboBoxItem Content="GB"/></ComboBox></StackPanel>
      <Button Content="Apply filters" Click="SearchPreview_Click" Padding="8,3" VerticalAlignment="Center" Margin="0,0,8,0"/>
      <Button Content="Reset filters" Click="SearchReset_Click" Padding="8,3" VerticalAlignment="Center"/>
     </WrapPanel>
-    <TextBlock Text="Example UI only: Search and Apply filters do not scan drives or change the file list." TextWrapping="Wrap"/>
+    <TextBlock Text="Search is not implemented in this example." TextWrapping="Wrap"/>
    </StackPanel>
      </GroupBox>
     </ScrollViewer>
    </Border>
   </Popup>
-  <!-- ============================== File Action Toolbar - Visible in Folder View ============================== -->
+
+  <!-- ================= Explorer Command Bar ================= -->
   <WrapPanel x:Name="FileToolbar" DockPanel.Dock="Top" Margin="0,0,0,8">
-<Button Content="Pin this folder" Click="PinCurrent_Click" Padding="8,3" Margin="0,0,4,0"/>
-   <Button Tag="New folder" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8F4;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="New folder" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button Tag="New file" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8A5;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="New file" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="OpenButton" Tag="Open" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8E5;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Open" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="CopyButton" Tag="Copy" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8C8;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Copy" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="CutButton" Tag="Cut" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8C6;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Cut" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="PasteButton" Tag="Paste" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE77F;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Paste" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="MoveButton" Tag="Move" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8DE;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Move to..." VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="RenameButton" Tag="Rename" Click="Action_Click" Padding="8,3" Margin="0,0,4,0">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8AC;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Rename" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
-   <Button x:Name="DeleteButton" Tag="Delete" Click="Action_Click" Padding="8,3">
-<StackPanel Orientation="Horizontal">
-<TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE74D;" VerticalAlignment="Center" Margin="0,0,6,0"/>
-<TextBlock Text="Delete" VerticalAlignment="Center"/>
-</StackPanel>
-</Button>
+   <WrapPanel.Resources>
+    <Style TargetType="Button">
+     <Setter Property="Background" Value="Transparent"/>
+     <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+   </WrapPanel.Resources>
+   <Button Click="ToolbarMenu_Click" Padding="10,6" Margin="0,0,12,0" ToolTip="Create a new item">
+    <Button.ContextMenu><ContextMenu MenuItem.Click="Menu_Click"><MenuItem Header="Folder" Tag="New folder"/><MenuItem Header="Text document" Tag="New file"/></ContextMenu></Button.ContextMenu>
+    <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE710;" Margin="0,0,8,0"/><TextBlock Text="New  ⌄"/></StackPanel>
+   </Button>
+   <Button x:Name="CutButton" Tag="Cut" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Cut" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Cut"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8C6;"/></Button>
+   <Button x:Name="CopyButton" Tag="Copy" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Copy" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Copy"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8C8;"/></Button>
+   <Button x:Name="PasteButton" Tag="Paste" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Paste" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Paste"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE77F;"/></Button>
+   <Button x:Name="RenameButton" Tag="Rename" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Rename" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Rename"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8AC;"/></Button>
+   <Button x:Name="MoveButton" Tag="Move" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Move to..." ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Move to..."><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8DE;"/></Button>
+   <Button x:Name="DeleteButton" Tag="Delete" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Delete" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Delete"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE74D;"/></Button>
+   <Button x:Name="OpenButton" Tag="Open" Click="Action_Click" Width="38" Height="32" Margin="0,0,6,0" ToolTip="Open" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Open"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE8E5;"/></Button>   <Separator Width="1" Margin="8,0,12,0"/>
+   <Button x:Name="SortButton" Click="ToolbarMenu_Click" ContextMenu="{StaticResource SortOptions}" Padding="10,6" Margin="0,0,8,0" ToolTip="Sort items">
+    <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8CB;" Margin="0,0,8,0"/><TextBlock Text="Sort  ⌄"/></StackPanel>
+   </Button>
+   <Button x:Name="ViewButton" Click="ToolbarMenu_Click" ContextMenu="{StaticResource ViewOptions}" Padding="10,6" ToolTip="Change view">
+    <StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE8A9;" Margin="0,0,8,0"/><TextBlock Text="View  ⌄"/></StackPanel>
+   </Button>
   </WrapPanel>
   <!-- ============================== Bottom - Operation Feedback ============================== -->
   <TextBlock DockPanel.Dock="Bottom" x:Name="Feedback" Text="Ready." Margin="0,8,0,8" TextWrapping="Wrap"/>
   <Grid>
    <Grid.ColumnDefinitions>
-<ColumnDefinition Width="160"/>
+<ColumnDefinition Width="200"/>
 <ColumnDefinition Width="*"/>
 </Grid.ColumnDefinitions>
    <!-- ============================== Left - Sidebar Default Folder Shortcuts ============================== -->
-   <StackPanel x:Name="Sidebar" Margin="0,0,8,0">
+   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="Sidebar" Margin="0,0,8,0">
+    <StackPanel.Resources>
+     <Style TargetType="Button">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+     </Style>
+    </StackPanel.Resources>
 <Button Tag="Home" Click="Location_Click" AllowDrop="True" DragOver="Move_SidebarOver" DragLeave="Move_TargetLeave" Drop="Move_SidebarDrop" ContextMenu="{StaticResource LocationMenu}" HorizontalContentAlignment="Left" Padding="6" Margin="0,0,4,4" >
 <StackPanel Orientation="Horizontal">
 <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE80F;" Margin="0,0,8,0"/>
@@ -353,7 +362,7 @@
 <TextBlock Text="Data (D:)"/>
 </StackPanel>
 </Button>
-</StackPanel>
+</StackPanel></ScrollViewer>
    <!-- ============================== Right - Home Page and Folder View ============================== -->
    <Grid Grid.Column="1">
 <ScrollViewer ContextMenu="{StaticResource BackgroundMenu}" x:Name="HomeView" VerticalScrollBarVisibility="Auto">
@@ -469,7 +478,7 @@
 <TextBlock x:Name="SortLabel" HorizontalAlignment="Right"/>
 </DockPanel>
     <Grid>
-     <!-- ============================== Folder View - File List, Multiple Selection and Sorting ============================== -->
+     <!-- ============================== File list ============================== -->
      <ListView x:Name="FileList" SelectionMode="Extended" SelectionChanged="Selection_Changed" MouseDoubleClick="Files_DoubleClick" KeyDown="Files_KeyDown" GridViewColumnHeader.Click="Sort_Click" ContextMenu="{StaticResource FileMenu}" PreviewMouseRightButtonDown="List_RightClick" dd:DragDrop.IsDragSource="True" dd:DragDrop.UseDefaultDragAdorner="True" dd:DragDrop.DragAdornerTemplate="{StaticResource DragPreviewTemplate}" dd:DragDrop.DragHandler="{Binding QuickMoveDragHandler, ElementName=MainWindowRoot}">
       <ListView.View>
 <GridView AllowsColumnReorder="False">
@@ -489,7 +498,7 @@
       </GridView>
 </ListView.View>
      </ListView>
-     <!-- ============================== Folder View - Empty Folder Message ============================== -->
+     <!-- ============================== Empty folder ============================== -->
      <TextBlock x:Name="EmptyLabel" Text="This folder is empty." HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed"/>
     </Grid>
    </DockPanel>
