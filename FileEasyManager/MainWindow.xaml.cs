@@ -22,10 +22,10 @@ public partial class MainWindow : Window
         new("Desktop", "C:\\", true), new("Downloads", "C:\\", true),
         new("Documents", "C:\\", true), new("Pictures", "C:\\", true),
         new("Music", "C:\\", true), new("Videos", "C:\\", true),
-        new("ExampleFolder1", "C:\\Documents", true),
-        new("ExampleFolder2", "C:\\Documents", true),
-        new("ExampleFolder3", "C:\\Documents\\ExampleFolder1", true),
-        new("ExampleFolder4", "C:\\Documents\\ExampleFolder1", true),
+        new("ExampleFolder1", "C:\\Documents", true, 322122547200L),
+        new("ExampleFolder2", "C:\\Documents", true,  314572800),
+        new("ExampleFolder3", "C:\\Documents\\ExampleFolder1", true, 104857600),
+        new("ExampleFolder4", "C:\\Documents\\ExampleFolder1", true, 104857600),
         new("ExampleFile1.docx", "C:\\Documents\\ExampleFolder1", false, 102400, new DateTime(2026, 10, 20)),
         new("ExampleFile2.docx", "C:\\Documents", false, 204800, new DateTime(2026, 10, 27)),
         new("ExampleFile3.pdf", "C:\\Documents", false, 307200, new DateTime(2026, 10, 22)),
@@ -191,4 +191,20 @@ public record PreviewItem(string Name, string Parent, bool Folder, long Bytes = 
     public DateTime ModifiedDate => ModifiedAt ?? new DateTime(2026, 10, 27, 10, 30, 0);
     public string Modified => ModifiedDate.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture);
     public string SizeText => Folder ? "—" : $"{Bytes / 1024d:0} KB";
+
+    public string SizeWithFolders => FormatSize(Bytes);
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1024L * 1024 * 1024)
+            return $"{bytes / (1024d * 1024 * 1024):0.##} GB";
+
+        if (bytes >= 1024L * 1024)
+            return $"{bytes / (1024d * 1024):0.##} MB";
+
+        if (bytes >= 1024L)
+            return $"{bytes / 1024d:0.##} KB";
+
+        return $"{bytes} B";
+    }
 }

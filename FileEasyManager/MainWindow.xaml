@@ -147,7 +147,10 @@
    <Separator/>
    <MenuItem Header="List" Tag="List" IsCheckable="True"/>
    <MenuItem Header="Details" Tag="Details" IsCheckable="True" IsChecked="True"/>
+   <Separator/>
+   <MenuItem Header="Show folder sizes" Tag="FolderSizes" IsCheckable="True"/>
   </ContextMenu>
+     
   <ItemsPanelTemplate x:Key="RowsPanel"><VirtualizingStackPanel/></ItemsPanelTemplate>
   <ItemsPanelTemplate x:Key="IconsPanel"><WrapPanel/></ItemsPanelTemplate>
   <ItemsPanelTemplate x:Key="ListPanel">
@@ -494,7 +497,7 @@
 </GridViewColumn>
        <GridViewColumn Header="Type" Width="145" DisplayMemberBinding="{Binding Type}"/>
        <GridViewColumn Header="Date modified" Width="165" DisplayMemberBinding="{Binding Modified}"/>
-       <GridViewColumn Header="Size" Width="100" DisplayMemberBinding="{Binding SizeText}"/>
+       <GridViewColumn x:Name="SizeColumn" Header="Size" Width="100" DisplayMemberBinding="{Binding SizeText}"/>
       </GridView>
 </ListView.View>
      </ListView>

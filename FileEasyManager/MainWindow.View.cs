@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 
 namespace FileEasyManager;
 
@@ -35,11 +36,18 @@ public partial class MainWindow
     }
 
     // -------------------- View modes --------------------
-    // ListView templates and WrapPanel.
-    // https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/how-to-create-a-custom-view-mode-for-a-listview
     private void ViewMenu_Click(object sender, RoutedEventArgs e)
     {
         if (e.OriginalSource is not MenuItem { Tag: string mode }) return;
+        if (mode == "FolderSizes")
+        {
+            var menuItem = (MenuItem)e.OriginalSource;
+
+            SizeColumn.DisplayMemberBinding = new Binding(
+                menuItem.IsChecked ? "SizeWithFolders" : "SizeText");
+
+            return;
+        }
         viewMode = mode;
         FileList.View = null;
         FileList.ItemTemplate = null;
@@ -56,7 +64,11 @@ public partial class MainWindow
         ScrollViewer.SetHorizontalScrollBarVisibility(FileList, mode is "List" or "Details" ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled);
         ScrollViewer.SetVerticalScrollBarVisibility(FileList, mode == "List" ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
         foreach (var item in ViewButton.ContextMenu.Items.OfType<MenuItem>())
+        {
+            if (item.Tag as string == "FolderSizes") continue;
+
             item.IsChecked = (string)item.Tag == viewMode;
+        }
         Feedback.Text = "View: " + ((MenuItem)e.OriginalSource).Header;
     }
 }
