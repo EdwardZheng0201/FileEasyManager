@@ -237,8 +237,7 @@
                     Padding="8,3"
                     Click="ConsoleExit_Click">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE74A;" Margin="0,0,8,0"/>
-                    <TextBlock Text="Exit"/>
+                    <TextBlock Text=">exit"/>
                 </StackPanel>
             </Button>
         </Grid>
