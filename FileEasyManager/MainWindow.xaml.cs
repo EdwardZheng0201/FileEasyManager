@@ -71,34 +71,60 @@ public partial class MainWindow : Window
         UpdateSelection();
     }
 
+
+
+
+
     // -------------------- Navigation Buttons and Address Bar --------------------
+
     private void Location_Click(object sender, RoutedEventArgs e) => Navigate((string)((Button)sender).Tag);
+
     private void Back_Click(object sender, RoutedEventArgs e)
     {
         if (back.Count == 0) return;
         forward.Push(currentPath); currentPath = back.Pop(); ShowPage();
     }
+
     private void Forward_Click(object sender, RoutedEventArgs e)
     {
         if (forward.Count == 0) return;
         back.Push(currentPath); currentPath = forward.Pop(); ShowPage();
     }
+
+
     private void Up_Click(object sender, RoutedEventArgs e)
     {
         var folder = samples.FirstOrDefault(x => x.Folder && x.Path == currentPath);
         if (folder != null) Navigate(folder.Parent);
     }
+
+
     private void Refresh_Click(object sender, RoutedEventArgs e) => ShowPage();
+
+
     private void Address_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter) return;
-        string path = AddressBox.Text.Trim();
-        var folder = samples.FirstOrDefault(x => x.Folder && x.Path.TrimEnd('\\').Equals(path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
-        if (path.Equals("Home", StringComparison.OrdinalIgnoreCase)) Navigate("Home");
-        else if (path.Equals("This PC", StringComparison.OrdinalIgnoreCase)) Navigate("This PC");
-        else if (folder != null) Navigate(folder.Path);
-        else Feedback.Text = "Demo path not found.";
+
         e.Handled = true;
+
+        string input = AddressBox.Text.Trim();
+        if (input.Length == 0) return;
+
+        var folder = samples.FirstOrDefault(item =>
+            item.Folder &&
+            item.Path.TrimEnd('\\').Equals(
+                input.TrimEnd('\\'),
+                StringComparison.OrdinalIgnoreCase));
+
+        if (input.Equals("Home", StringComparison.OrdinalIgnoreCase))
+            Navigate("Home");
+        else if (input.Equals("This PC", StringComparison.OrdinalIgnoreCase))
+            Navigate("This PC");
+        else if (folder != null)
+            Navigate(folder.Path);
+        else
+            ShowConsolePreview();
     }
 
     // -------------------- Selection and Opening --------------------
@@ -130,8 +156,7 @@ public partial class MainWindow : Window
         else if (!row.IsSelected) { list.UnselectAll(); row.IsSelected = true; }
     }
 
-    // -------------------- Column Sorting - Microsoft Learn Reference --------------------
-    // https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/how-to-sort-a-gridview-column-when-a-header-is-clicked
+    // ------------------------- Column Sorting --------------------------------------------------------
     private void Sort_Click(object sender, RoutedEventArgs e)
     {
         if (e.OriginalSource is not GridViewColumnHeader header || header.Column == null) return;

@@ -204,8 +204,80 @@
     <TextBox x:Name="SearchNameBox" VerticalContentAlignment="Center" KeyDown="SearchName_KeyDown"
              ToolTip="Search by name"/>
    </DockPanel>
-<TextBox x:Name="AddressBox" Grid.Column="1" VerticalContentAlignment="Center" KeyDown="Address_KeyDown" ToolTip="Enter a demo folder path and press Enter"/>
-  </Grid>
+   <!-- ===================================================== Address Bar and Console Menu ================= -->
+   <DockPanel x:Name="AddressHost" Grid.Column="1">
+        <Button x:Name="ConsoleButton"
+                DockPanel.Dock="Right"
+                Click="ToolbarMenu_Click"
+                Padding="8,3"
+                Margin="4,0,0,0"
+                ToolTip="Command execution"
+                AutomationProperties.Name="Command execution">
+
+            <Button.ContextMenu>
+                <ContextMenu MenuItem.Click="ConsoleMenu_Click">
+                    <MenuItem Header="CMD" Tag="CMD" IsCheckable="True" IsChecked="True"/>
+                    <MenuItem Header="PowerShell" Tag="PowerShell" IsCheckable="True"/>
+                    <MenuItem Header="WSL" Tag="WSL" IsCheckable="True"/>
+                </ContextMenu>
+            </Button.ContextMenu>
+
+            <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Text="&#xE756;"/>
+        </Button>
+
+        <Grid>
+            <TextBox x:Name="AddressBox"
+                    VerticalContentAlignment="Center"
+                    KeyDown="Address_KeyDown"
+                    ToolTip="Enter a demo folder path and press Enter"/>
+
+            <Button x:Name="ConsoleExitButton"
+                    Visibility="Collapsed"
+                    HorizontalContentAlignment="Left"
+                    Padding="8,3"
+                    Click="ConsoleExit_Click">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Text="&#xE74A;" Margin="0,0,8,0"/>
+                    <TextBlock Text="Exit"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </DockPanel>
+        </Grid>
+
+        
+
+<!-- ================= Console Preview ================= -->
+<Popup x:Name="ConsolePopup"
+       PlacementTarget="{Binding ElementName=AddressHost}"
+       Placement="Bottom"
+       VerticalOffset="4"
+       StaysOpen="True">
+
+    <Border Width="{Binding ActualWidth, ElementName=AddressHost}"
+            Background="Black"
+            BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+            BorderThickness="1"
+            Padding="10">
+
+        <StackPanel>
+            <TextBox x:Name="ConsoleOutput"
+                    Height="220"
+                    Background="Black"
+                    Foreground="LightGray"
+                    BorderThickness="0"
+                    IsReadOnly="True"
+                    FontFamily="Consolas"
+                    FontSize="14"
+                    TextWrapping="Wrap"
+                    VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+    </Border>
+</Popup>
+
+
+
+
   <!-- ================= Search filters ================= -->
   <Popup x:Name="SearchFilters" PlacementTarget="{Binding ElementName=SearchFiltersButton}" Placement="Bottom" HorizontalOffset="-630" StaysOpen="False">
    <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" BorderThickness="1" Padding="8">
@@ -411,7 +483,7 @@
 </StackPanel>
 </Button>
 </WrapPanel>
-<!-- ================= Home - Pinned Locations ================= -->
+<!-- ================= Home - Pinned Locations ========================================================================================================================================================================================================== -->
 <TextBlock Text="Pinned Locations"/>
 <ItemsControl ItemsSource="{Binding PinnedLocations, ElementName=MainWindowRoot}" ItemTemplate="{StaticResource PinnedTemplate}" Margin="0,8,0,16">
  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
